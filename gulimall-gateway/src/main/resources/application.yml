@@ -1,0 +1,29 @@
+server:
+  port: 88
+spring:
+  application:
+    name: gulimall-gateway
+  cloud:
+    nacos:
+      serverAddr: 3344love.cn:8848
+      config:
+        serverAddr: 3344love.cn:8848
+        file-extension: yml
+        namespace: b48d0e48-fac8-43fd-ba8f-888423fe0ee0
+    gateway:
+      routes:
+        - id: admin_route
+          uri: lb://renren-fast
+          predicates:
+            - Path=/api/**
+          filters:
+            - RewritePath=/api/?(?<segment>.*), /renren-fast/$\{segment}
+  config:
+    import:
+      - optional:nacos:${spring.application.name}.${spring.cloud.nacos.config.file-extension}?refreshEnabled=true
+# application.yml
+#logging:
+#  level:
+#    org.springframework.cloud.gateway: DEBUG
+#    org.springframework.web.reactive: DEBUG
+#    reactor.netty.http.client: DEBUG
