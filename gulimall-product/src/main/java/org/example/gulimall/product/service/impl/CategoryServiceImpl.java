@@ -104,21 +104,27 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
     @Override
     public Map<String, List<Catalog2Vo>> getCatalogJson() {
         List<CategoryEntity> level1Categorys = getLevel1Categorys();
+        // 1.性能优化业务逻辑调整 一次性查询所有，避免每次都去频繁查询数据库
+        List<CategoryEntity> categoryList = baseMapper.selectList(null);
         return level1Categorys.stream().collect(Collectors.toMap(k -> k.getCatId().toString(), v -> {
             // 查询一级分类下的所有二级分类
             List<Catalog2Vo> Catalog2Vos = null;
-            List<CategoryEntity> level2Categorys = baseMapper.selectList(new QueryWrapper<CategoryEntity>().eq("parent_cid", v.getCatId()));
+            List<CategoryEntity> level2Categorys = getCategoryEntities(categoryList, v.getCatId());
             if (level2Categorys != null) {
                 Catalog2Vos = level2Categorys.stream().map(itme -> {
                     Catalog2Vo Catalog2Vo = new Catalog2Vo(itme.getParentCid().toString(), itme.getCatId().toString(), itme.getName(), null);
                     // 根据二级分类查询三级分类
-                    List<CategoryEntity> level3Categorys = baseMapper.selectList(new QueryWrapper<CategoryEntity>().eq("parent_cid", itme.getCatId()));
-                                        Catalog2Vo.setCatalog3List(level3Categorys.stream().map(itme3 -> new Catalog2Vo.Catalog3Vo(itme3.getParentCid().toString(), itme3.getCatId().toString(), itme3.getName())).collect(Collectors.toList()));
+                    List<CategoryEntity> level3Categorys = getCategoryEntities(categoryList, itme.getCatId());
+                    Catalog2Vo.setCatalog3List(level3Categorys.stream().map(itme3 -> new Catalog2Vo.Catalog3Vo(itme3.getParentCid().toString(), itme3.getCatId().toString(), itme3.getName())).collect(Collectors.toList()));
                     return Catalog2Vo;
                 }).collect(Collectors.toList());
             }
             return Catalog2Vos;
         }));
+    }
+
+    private List<CategoryEntity> getCategoryEntities(List<CategoryEntity> categoryList,Long catId) {
+        return categoryList.stream().filter(item -> item.getParentCid().equals(catId)).collect(Collectors.toList());
     }
 
     //225,25,2
