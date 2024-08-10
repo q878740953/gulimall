@@ -51,13 +51,13 @@ public class AttrGroupController {
         return R.ok();
     }
 
-    ///product/attrgroup/{catelogId}/withattr
-    @GetMapping("/{catelogId}/withattr")
-    public R getAttrGroupWithAttrs(@PathVariable("catelogId")Long catelogId){
+    ///product/attrgroup/{CatalogId}/withattr
+    @GetMapping("/{CatalogId}/withattr")
+    public R getAttrGroupWithAttrs(@PathVariable("CatalogId")Long CatalogId){
 
         //1、查出当前分类下的所有属性分组，
         //2、查出每个属性分组的所有属性
-       List<AttrGroupWithAttrsVo> vos =  attrGroupService.getAttrGroupWithAttrsByCatelogId(catelogId);
+       List<AttrGroupWithAttrsVo> vos =  attrGroupService.getAttrGroupWithAttrsByCatalogId(CatalogId);
        return R.ok().put("data",vos);
     }
 
@@ -86,13 +86,13 @@ public class AttrGroupController {
     /**
      * 列表
      */
-    @RequestMapping("/list/{catelogId}")
+    @RequestMapping("/list/{CatalogId}")
     //@RequiresPermissions("product:attrgroup:list")
     public R list(@RequestParam Map<String, Object> params,
-                  @PathVariable("catelogId") Long catelogId){
+                  @PathVariable("CatalogId") Long CatalogId){
 //        PageUtils page = attrGroupService.queryPage(params);
 
-        PageUtils page = attrGroupService.queryPage(params,catelogId);
+        PageUtils page = attrGroupService.queryPage(params,CatalogId);
 
         return R.ok().put("page", page);
     }
@@ -106,10 +106,10 @@ public class AttrGroupController {
     public R info(@PathVariable("attrGroupId") Long attrGroupId){
 		AttrGroupEntity attrGroup = attrGroupService.getById(attrGroupId);
 
-        Long catelogId = attrGroup.getCatelogId();
-        Long[] path = categoryService.findCatelogPath(catelogId);
+        Long CatalogId = attrGroup.getCatalogId();
+        Long[] path = categoryService.findCatalogPath(CatalogId);
 
-        attrGroup.setCatelogPath(path);
+        attrGroup.setCatalogPath(path);
 
         return R.ok().put("attrGroup", attrGroup);
     }

@@ -3,6 +3,7 @@ package org.example.gulimall.product.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import org.example.common.utils.PageUtils;
 import org.example.gulimall.product.entity.CategoryEntity;
+import org.example.gulimall.product.vo.Catalog2Vo;
 
 import java.util.List;
 import java.util.Map;
@@ -24,14 +25,17 @@ public interface CategoryService extends IService<CategoryEntity> {
 
 
     /**
-     * 找到catelogId的完整路径；
+     * 找到CatalogId的完整路径；
      * [父/子/孙]
-     * @param catelogId
+     * @param CatalogId
      * @return
      */
-    Long[] findCatelogPath(Long catelogId);
+    Long[] findCatalogPath(Long CatalogId);
 
     void updateCascade(CategoryEntity category);
 
+    List<CategoryEntity> getLevel1Categorys();
+
+    Map<String, List<Catalog2Vo>> getCatalogJson();
 }
 

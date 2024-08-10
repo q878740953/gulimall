@@ -40,9 +40,9 @@ public class AttrGroupServiceImpl extends ServiceImpl<AttrGroupDao, AttrGroupEnt
     }
 
     @Override
-    public PageUtils queryPage(Map<String, Object> params, Long catelogId) {
+    public PageUtils queryPage(Map<String, Object> params, Long CatalogId) {
         String key = (String) params.get("key");
-        //select * from pms_attr_group where catelog_id=? and (attr_group_id=key or attr_group_name like %key%)
+        //select * from pms_attr_group where Catalog_id=? and (attr_group_id=key or attr_group_name like %key%)
         QueryWrapper<AttrGroupEntity> wrapper = new QueryWrapper<AttrGroupEntity>();
         if(!StringUtils.isEmpty(key)){
             wrapper.and((obj)->{
@@ -50,12 +50,12 @@ public class AttrGroupServiceImpl extends ServiceImpl<AttrGroupDao, AttrGroupEnt
             });
         }
 
-        if( catelogId == 0){
+        if( CatalogId == 0){
             IPage<AttrGroupEntity> page = this.page(new Query<AttrGroupEntity>().getPage(params),
                     wrapper);
             return new PageUtils(page);
         }else {
-            wrapper.eq("catelog_id",catelogId);
+            wrapper.eq("Catalog_id",CatalogId);
             IPage<AttrGroupEntity> page = this.page(new Query<AttrGroupEntity>().getPage(params),
                     wrapper);
             return new PageUtils(page);
@@ -65,14 +65,14 @@ public class AttrGroupServiceImpl extends ServiceImpl<AttrGroupDao, AttrGroupEnt
 
     /**
      * 根据分类id查出所有的分组以及这些组里面的属性
-     * @param catelogId
+     * @param CatalogId
      * @return
      */
     @Override
-    public List<AttrGroupWithAttrsVo> getAttrGroupWithAttrsByCatelogId(Long catelogId) {
+    public List<AttrGroupWithAttrsVo> getAttrGroupWithAttrsByCatalogId(Long CatalogId) {
             //org.example.gulimall.product.vo
         //1、查询分组信息
-        List<AttrGroupEntity> attrGroupEntities = this.list(new QueryWrapper<AttrGroupEntity>().eq("catelog_id", catelogId));
+        List<AttrGroupEntity> attrGroupEntities = this.list(new QueryWrapper<AttrGroupEntity>().eq("Catalog_id", CatalogId));
 
         //2、查询所有属性
         List<AttrGroupWithAttrsVo> collect = attrGroupEntities.stream().map(group -> {

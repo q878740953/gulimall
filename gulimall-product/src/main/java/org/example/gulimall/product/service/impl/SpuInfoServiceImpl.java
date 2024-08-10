@@ -222,16 +222,16 @@ public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> i
             wrapper.eq("brand_id",brandId);
         }
 
-        String catelogId = (String) params.get("catelogId");
-        if(!StringUtils.isEmpty(catelogId)&&!"0".equalsIgnoreCase(catelogId)){
-            wrapper.eq("catalog_id",catelogId);
+        String CatalogId = (String) params.get("CatalogId");
+        if(!StringUtils.isEmpty(CatalogId)&&!"0".equalsIgnoreCase(CatalogId)){
+            wrapper.eq("catalog_id",CatalogId);
         }
 
         /**
          * status: 2
          * key:
          * brandId: 9
-         * catelogId: 225
+         * CatalogId: 225
          */
 
         IPage<SpuInfoEntity> page = this.page(

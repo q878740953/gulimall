@@ -1,6 +1,7 @@
 package org.example.gulimall.product.service.impl;
 
 import org.example.gulimall.product.service.CategoryBrandRelationService;
+import org.example.gulimall.product.vo.Catalog2Vo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -74,9 +75,9 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
 
     //[2,25,225]
     @Override
-    public Long[] findCatelogPath(Long catelogId) {
+    public Long[] findCatalogPath(Long CatalogId) {
         List<Long> paths = new ArrayList<>();
-        List<Long> parentPath = findParentPath(catelogId, paths);
+        List<Long> parentPath = findParentPath(CatalogId, paths);
 
         Collections.reverse(parentPath);
 
@@ -95,11 +96,36 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
         categoryBrandRelationService.updateCategory(category.getCatId(),category.getName());
     }
 
+    @Override
+    public List<CategoryEntity> getLevel1Categorys() {
+        return baseMapper.selectList(new QueryWrapper<CategoryEntity>().eq("parent_cid", 0));
+    }
+
+    @Override
+    public Map<String, List<Catalog2Vo>> getCatalogJson() {
+        List<CategoryEntity> level1Categorys = getLevel1Categorys();
+        return level1Categorys.stream().collect(Collectors.toMap(k -> k.getCatId().toString(), v -> {
+            // 查询一级分类下的所有二级分类
+            List<Catalog2Vo> Catalog2Vos = null;
+            List<CategoryEntity> level2Categorys = baseMapper.selectList(new QueryWrapper<CategoryEntity>().eq("parent_cid", v.getCatId()));
+            if (level2Categorys != null) {
+                Catalog2Vos = level2Categorys.stream().map(itme -> {
+                    Catalog2Vo Catalog2Vo = new Catalog2Vo(itme.getParentCid().toString(), itme.getCatId().toString(), itme.getName(), null);
+                    // 根据二级分类查询三级分类
+                    List<CategoryEntity> level3Categorys = baseMapper.selectList(new QueryWrapper<CategoryEntity>().eq("parent_cid", itme.getCatId()));
+                                        Catalog2Vo.setCatalog3List(level3Categorys.stream().map(itme3 -> new Catalog2Vo.Catalog3Vo(itme3.getParentCid().toString(), itme3.getCatId().toString(), itme3.getName())).collect(Collectors.toList()));
+                    return Catalog2Vo;
+                }).collect(Collectors.toList());
+            }
+            return Catalog2Vos;
+        }));
+    }
+
     //225,25,2
-    private List<Long> findParentPath(Long catelogId,List<Long> paths){
+    private List<Long> findParentPath(Long CatalogId,List<Long> paths){
         //1、收集当前节点id
-        paths.add(catelogId);
-        CategoryEntity byId = this.getById(catelogId);
+        paths.add(CatalogId);
+        CategoryEntity byId = this.getById(CatalogId);
         if(byId.getParentCid()!=0){
             findParentPath(byId.getParentCid(),paths);
         }
