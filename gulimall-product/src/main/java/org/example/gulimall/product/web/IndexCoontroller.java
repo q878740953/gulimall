@@ -35,7 +35,7 @@ public class IndexCoontroller {
 
     @GetMapping({"/index/getCatalogJson"})
     @ResponseBody
-    public Map<String, List<Catalog2Vo>> getCatalogJson(Model model) throws JsonProcessingException {
+    public Map<String, List<Catalog2Vo>> getCatalogJson(Model model) throws Exception {
         return categoryService.getCatalogJson();
     }
 

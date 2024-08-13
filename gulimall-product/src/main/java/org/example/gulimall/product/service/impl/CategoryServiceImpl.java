@@ -10,10 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -115,7 +112,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
 
 
     @Override
-    public Map<String, List<Catalog2Vo>> getCatalogJson() throws JsonProcessingException {
+    public Map<String, List<Catalog2Vo>> getCatalogJson() throws Exception {
         String key = "catalogJson";
         // 1. 加入缓存逻辑
         String catalogJson = redisTemplate.opsForValue().get(key);
@@ -129,36 +126,50 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
     }
 
     // 从数据库查询并封装分类数据
-    public Map<String, List<Catalog2Vo>> getCatalogJsonFromDb() throws JsonProcessingException {
+    public Map<String, List<Catalog2Vo>> getCatalogJsonFromDb() throws Exception {
         // 代码块，加锁，只能一个线程来获取锁，然后查询db
-        synchronized (this){
+        String token = UUID.randomUUID().toString();
+        Boolean lock = redisTemplate.opsForValue().setIfAbsent("lock", token, 30, TimeUnit.SECONDS);
+        if (Boolean.TRUE.equals(lock)){ // 获得分布式锁
             // 双重检查，如果得到锁后，再来查询缓存，是否存在数据
-            String catalogJson = redisTemplate.opsForValue().get("catalogJson");
-            if (StringUtils.isNotBlank(catalogJson)){
-                return objectMapper.readValue(catalogJson, new TypeReference<Map<String, List<Catalog2Vo>>>() {});
-            }
-            System.out.println("线程号：" + Thread.currentThread().getId() +"缓存未命中，从数据库中查询");
-            List<CategoryEntity> level1Categorys = getLevel1Categorys();
-            // 1.性能优化业务逻辑调整 一次性查询所有，避免每次都去频繁查询数据库
-            List<CategoryEntity> categoryList = baseMapper.selectList(null);
-            Map<String, List<Catalog2Vo>> collect = level1Categorys.stream().collect(Collectors.toMap(k -> k.getCatId().toString(), v -> {
-                // 查询一级分类下的所有二级分类
-                List<Catalog2Vo> Catalog2Vos = null;
-                List<CategoryEntity> level2Categorys = getCategoryEntities(categoryList, v.getCatId());
-                if (level2Categorys != null) {
-                    Catalog2Vos = level2Categorys.stream().map(itme -> {
-                        Catalog2Vo Catalog2Vo = new Catalog2Vo(itme.getParentCid().toString(), itme.getCatId().toString(), itme.getName(), null);
-                        // 根据二级分类查询三级分类
-                        List<CategoryEntity> level3Categorys = getCategoryEntities(categoryList, itme.getCatId());
-                        Catalog2Vo.setCatalog3List(level3Categorys.stream().map(itme3 -> new Catalog2Vo.Catalog3Vo(itme3.getParentCid().toString(), itme3.getCatId().toString(), itme3.getName())).collect(Collectors.toList()));
-                        return Catalog2Vo;
-                    }).collect(Collectors.toList());
+            Map<String, List<Catalog2Vo>> collect = null;
+            try {
+                String catalogJson = redisTemplate.opsForValue().get("catalogJson");
+                if (StringUtils.isNotBlank(catalogJson)){
+                    return objectMapper.readValue(catalogJson, new TypeReference<Map<String, List<Catalog2Vo>>>() {});
                 }
-                return Catalog2Vos;
-            }));
+                System.out.println("线程号：" + Thread.currentThread().getId() +"缓存未命中，从数据库中查询");
+                List<CategoryEntity> level1Categorys = getLevel1Categorys();
+                // 1.性能优化业务逻辑调整 一次性查询所有，避免每次都去频繁查询数据库
+                List<CategoryEntity> categoryList = baseMapper.selectList(null);
+                collect = level1Categorys.stream().collect(Collectors.toMap(k -> k.getCatId().toString(), v -> {
+                    // 查询一级分类下的所有二级分类
+                    List<Catalog2Vo> Catalog2Vos = null;
+                    List<CategoryEntity> level2Categorys = getCategoryEntities(categoryList, v.getCatId());
+                    if (level2Categorys != null) {
+                        Catalog2Vos = level2Categorys.stream().map(itme -> {
+                            Catalog2Vo Catalog2Vo = new Catalog2Vo(itme.getParentCid().toString(), itme.getCatId().toString(), itme.getName(), null);
+                            // 根据二级分类查询三级分类
+                            List<CategoryEntity> level3Categorys = getCategoryEntities(categoryList, itme.getCatId());
+                            Catalog2Vo.setCatalog3List(level3Categorys.stream().map(itme3 -> new Catalog2Vo.Catalog3Vo(itme3.getParentCid().toString(), itme3.getCatId().toString(), itme3.getName())).collect(Collectors.toList()));
+                            return Catalog2Vo;
+                        }).collect(Collectors.toList());
+                    }
+                    return Catalog2Vos;
+                }));
+            } finally {
+                // 业务无论是否完成，删除锁
+                if (token.equals(redisTemplate.opsForValue().get("lock"))){
+                    redisTemplate.delete("lock");
+                }
+            }
             // 3. 将查询到的数据缓存进redis中
             redisTemplate.opsForValue().set("catalogJson", objectMapper.writeValueAsString(collect), 1, TimeUnit.DAYS);
             return collect;
+        } else {
+            // 睡眠 避免调用太快
+            Thread.sleep(200);
+            return getCatalogJsonFromDb();
         }
     }
 
