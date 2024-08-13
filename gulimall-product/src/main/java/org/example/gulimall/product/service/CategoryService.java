@@ -1,6 +1,7 @@
 package org.example.gulimall.product.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.example.common.utils.PageUtils;
 import org.example.gulimall.product.entity.CategoryEntity;
 import org.example.gulimall.product.vo.Catalog2Vo;
@@ -36,6 +37,6 @@ public interface CategoryService extends IService<CategoryEntity> {
 
     List<CategoryEntity> getLevel1Categorys();
 
-    Map<String, List<Catalog2Vo>> getCatalogJson();
+    Map<String, List<Catalog2Vo>> getCatalogJson() throws JsonProcessingException;
 }
 

@@ -1,5 +1,6 @@
 package org.example.gulimall.product.web;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.example.gulimall.product.entity.CategoryEntity;
 import org.example.gulimall.product.service.CategoryService;
 import org.example.gulimall.product.vo.Catalog2Vo;
@@ -34,13 +35,14 @@ public class IndexCoontroller {
 
     @GetMapping({"/index/getCatalogJson"})
     @ResponseBody
-    public Map<String, List<Catalog2Vo>> getCatalogJson(Model model){
+    public Map<String, List<Catalog2Vo>> getCatalogJson(Model model) throws JsonProcessingException {
         return categoryService.getCatalogJson();
     }
 
     @GetMapping("/hello")
     @ResponseBody
     public String hello(){
+        System.out.println(Thread.currentThread().getId());
         return "hello111";
     }
 }
